@@ -14,11 +14,7 @@ import {
   IEventBus,
 } from '@alilc/lowcode-editor-core';
 
-import {
-  ISimulatorHost,
-  Component,
-  DropContainer,
-} from '../simulator';
+import { ISimulatorHost, Component, DropContainer } from '../simulator';
 import Viewport from './viewport';
 import { createSimulator } from './create-simulator';
 import { Node, INode, contains, isRootNode, isLowCodeComponent } from '../document';
@@ -147,7 +143,15 @@ const defaultEnvironment = [
   ),
   assetItem(
     AssetType.JSText,
-    'window.PropTypes=parent.PropTypes;React.PropTypes=parent.PropTypes; window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.parent.__REACT_DEVTOOLS_GLOBAL_HOOK__;',
+    `
+    window.PropTypes=parent.PropTypes;
+    React.PropTypes=parent.PropTypes; 
+    window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = window.parent.__REACT_DEVTOOLS_GLOBAL_HOOK__;
+    window.CatlComponents=parent.CatlComponents;
+    window.DiccGlobalContext=parent.DiccGlobalContext;
+    window.__dicc_global=parent.__dicc_global;
+    window.__dicc_themes=parent.__dicc_themes;
+    `,
   ),
 ];
 
@@ -375,24 +379,30 @@ export class BuiltinSimulatorHost implements ISimulatorHost<BuiltinSimulatorProp
    */
   connect(
     renderer: BuiltinSimulatorRenderer,
-    effect: (reaction: IReactionPublic) => void, options?: IReactionOptions,
+    effect: (reaction: IReactionPublic) => void,
+    options?: IReactionOptions,
   ) {
     this._renderer = renderer;
     return autorun(effect, options);
   }
 
-  reaction(expression: (reaction: IReactionPublic) => unknown, effect: (value: unknown, prev: unknown, reaction: IReactionPublic) => void,
-    opts?: IReactionOptions | undefined): IReactionDisposer {
+  reaction(
+    expression: (reaction: IReactionPublic) => unknown,
+    effect: (value: unknown, prev: unknown, reaction: IReactionPublic) => void,
+    opts?: IReactionOptions | undefined,
+  ): IReactionDisposer {
     return reaction(expression, effect, opts);
   }
 
-  autorun(effect: (reaction: IReactionPublic) => void, options?: IReactionOptions): IReactionDisposer {
+  autorun(
+    effect: (reaction: IReactionPublic) => void,
+    options?: IReactionOptions,
+  ): IReactionDisposer {
     return autorun(effect, options);
   }
 
   purge(): void {
     // todo
-
   }
 
   mountViewport(viewport: HTMLElement | null) {
@@ -716,10 +726,14 @@ export class BuiltinSimulatorHost implements ISimulatorHost<BuiltinSimulatorProp
           '.next-calendar-table',
           '.editor-container', // 富文本组件
         ];
-        const ignoreSelectors = customizeIgnoreSelectors?.(defaultIgnoreSelectors, e) || defaultIgnoreSelectors;
+        const ignoreSelectors =
+          customizeIgnoreSelectors?.(defaultIgnoreSelectors, e) || defaultIgnoreSelectors;
         const ignoreSelectorsString = ignoreSelectors.join(',');
         // 提供了 customizeIgnoreSelectors 的情况下，忽略 isFormEvent() 判断
-        if ((!customizeIgnoreSelectors && isFormEvent(e)) || target?.closest(ignoreSelectorsString)) {
+        if (
+          (!customizeIgnoreSelectors && isFormEvent(e)) ||
+          target?.closest(ignoreSelectorsString)
+        ) {
           e.preventDefault();
           e.stopPropagation();
         }
@@ -931,7 +945,10 @@ export class BuiltinSimulatorHost implements ISimulatorHost<BuiltinSimulatorProp
   /**
    * @see ISimulator
    */
-  getComponentInstances(node: INode, context?: IPublicTypeNodeInstance): IPublicTypeComponentInstance[] | null {
+  getComponentInstances(
+    node: INode,
+    context?: IPublicTypeNodeInstance,
+  ): IPublicTypeComponentInstance[] | null {
     const docId = node.document?.id;
     if (!docId) {
       return null;
@@ -979,7 +996,10 @@ export class BuiltinSimulatorHost implements ISimulatorHost<BuiltinSimulatorProp
   /**
    * @see ISimulator
    */
-  computeComponentInstanceRect(instance: IPublicTypeComponentInstance, selector?: string): IPublicTypeRect | null {
+  computeComponentInstanceRect(
+    instance: IPublicTypeComponentInstance,
+    selector?: string,
+  ): IPublicTypeRect | null {
     const renderer = this.renderer!;
     const elements = this.findDOMNodes(instance, selector);
     if (!elements) {
@@ -1045,7 +1065,10 @@ export class BuiltinSimulatorHost implements ISimulatorHost<BuiltinSimulatorProp
   /**
    * @see ISimulator
    */
-  findDOMNodes(instance: IPublicTypeComponentInstance, selector?: string): Array<Element | Text> | null {
+  findDOMNodes(
+    instance: IPublicTypeComponentInstance,
+    selector?: string,
+  ): Array<Element | Text> | null {
     const elements = this._renderer?.findDOMNodes(instance);
     if (!elements) {
       return null;
@@ -1064,7 +1087,9 @@ export class BuiltinSimulatorHost implements ISimulatorHost<BuiltinSimulatorProp
   /**
    * 通过 DOM 节点获取节点，依赖 simulator 的接口
    */
-  getNodeInstanceFromElement(target: Element | null): IPublicTypeNodeInstance<IPublicTypeComponentInstance, INode> | null {
+  getNodeInstanceFromElement(
+    target: Element | null,
+  ): IPublicTypeNodeInstance<IPublicTypeComponentInstance, INode> | null {
     if (!target) {
       return null;
     }
@@ -1206,7 +1231,10 @@ export class BuiltinSimulatorHost implements ISimulatorHost<BuiltinSimulatorProp
 
     const operationalNodes = nodes?.filter((node) => {
       const onMoveHook = node.componentMeta?.advanced.callbacks?.onMoveHook;
-      const canMove = onMoveHook && typeof onMoveHook === 'function' ? onMoveHook(node.internalToShellNode()) : true;
+      const canMove =
+        onMoveHook && typeof onMoveHook === 'function'
+          ? onMoveHook(node.internalToShellNode())
+          : true;
 
       let parentContainerNode: INode | null = null;
       let parentNode = node.parent;
@@ -1220,9 +1248,13 @@ export class BuiltinSimulatorHost implements ISimulatorHost<BuiltinSimulatorProp
         parentNode = parentNode.parent;
       }
 
-      const onChildMoveHook = parentContainerNode?.componentMeta?.advanced.callbacks?.onChildMoveHook;
+      const onChildMoveHook =
+        parentContainerNode?.componentMeta?.advanced.callbacks?.onChildMoveHook;
 
-      const childrenCanMove = onChildMoveHook && parentContainerNode && typeof onChildMoveHook === 'function' ? onChildMoveHook(node.internalToShellNode(), parentContainerNode.internalToShellNode()) : true;
+      const childrenCanMove =
+        onChildMoveHook && parentContainerNode && typeof onChildMoveHook === 'function'
+          ? onChildMoveHook(node.internalToShellNode(), parentContainerNode.internalToShellNode())
+          : true;
 
       return canMove && childrenCanMove;
     });
@@ -1240,9 +1272,7 @@ export class BuiltinSimulatorHost implements ISimulatorHost<BuiltinSimulatorProp
     const dropContainer = this.getDropContainer(e);
     const lockedNode = getClosestNode(dropContainer?.container, (node) => node.isLocked);
     if (lockedNode) return null;
-    if (
-      !dropContainer
-    ) {
+    if (!dropContainer) {
       return null;
     }
 
@@ -1309,8 +1339,9 @@ export class BuiltinSimulatorHost implements ISimulatorHost<BuiltinSimulatorProp
       const inst = instances
         ? instances.length > 1
           ? instances.find(
-            (_inst) => this.getClosestNodeInstance(_inst, container.id)?.instance === containerInstance,
-          )
+              (_inst) =>
+                this.getClosestNodeInstance(_inst, container.id)?.instance === containerInstance,
+            )
           : instances[0]
         : null;
       const rect = inst
@@ -1527,10 +1558,7 @@ export class BuiltinSimulatorHost implements ISimulatorHost<BuiltinSimulatorProp
   /**
    * 查找邻近容器
    */
-  getNearByContainer(
-    { container, instance }: DropContainer,
-    drillDownExcludes: Set<INode>,
-  ) {
+  getNearByContainer({ container, instance }: DropContainer, drillDownExcludes: Set<INode>) {
     const { children } = container;
     if (!children || children.isEmpty()) {
       return null;
